@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>webObsidian</title>
+    <base href="/webObsidian/" />
+    <link href="_framework/dotnet.62a82qd61r.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-EuF72MH3nQK/FwFbR6TncS0pZzu/GGYDnExCbIMHcM8=" />
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="webObsidian.styles.css" rel="stylesheet" />
+    <script type="importmap">{
+  "imports": {
+    "./_framework/blazor.webassembly.js": "./_framework/blazor.webassembly.w3qd1tpl0e.js",
+    "./_framework/dotnet.js": "./_framework/dotnet.62a82qd61r.js",
+    "./_framework/dotnet.native.js": "./_framework/dotnet.native.puryxhmhq9.js",
+    "./_framework/dotnet.runtime.js": "./_framework/dotnet.runtime.web2r9gqbh.js"
+  },
+  "scopes": {},
+  "integrity": {
+    "./_framework/blazor.webassembly.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
+    "./_framework/blazor.webassembly.w3qd1tpl0e.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
+    "./_framework/dotnet.62a82qd61r.js": "sha256-EuF72MH3nQK/FwFbR6TncS0pZzu/GGYDnExCbIMHcM8=",
+    "./_framework/dotnet.js": "sha256-EuF72MH3nQK/FwFbR6TncS0pZzu/GGYDnExCbIMHcM8=",
+    "./_framework/dotnet.native.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
+    "./_framework/dotnet.native.puryxhmhq9.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
+    "./_framework/dotnet.runtime.js": "sha256-SOUHEQ3FhDAibBSR2u90NWZpoBjPuWRmH0BAATUlhJU=",
+    "./_framework/dotnet.runtime.web2r9gqbh.js": "sha256-SOUHEQ3FhDAibBSR2u90NWZpoBjPuWRmH0BAATUlhJU="
+  }
+}</script>
+</head>
+
+<body>
+    <div id="app">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+    <script src="_framework/blazor.webassembly.w3qd1tpl0e.js"></script>
+    <script>
+        window.obsidianInterop = {
+            initLinkInterceptor: function (dotNetHelper) {
+                document.body.addEventListener('click', function (e) {
+                    let linkTarget = e.target.closest('.wiki-link');
+                    if (linkTarget) {
+                        e.preventDefault();
+                        
+                        // === ИСПРАВЛЕНИЕ ===
+                        // Принудительно прячем подсказку при клике
+                        let tooltip = document.getElementById('wiki-tooltip');
+                        if (tooltip) {
+                            tooltip.classList.remove('visible');
+                        }
+                        // ===================
+
+                        let noteName = linkTarget.getAttribute('data-note');
+                        dotNetHelper.invokeMethodAsync('OpenLinkFromJs', noteName);
+                        return;
+                    }
+
+                    if (e.target.tagName === 'IMG' && e.target.closest('.markdown-body')) {
+                        let overlay = document.getElementById('lightbox-overlay');
+                        let img = document.getElementById('lightbox-img');
+                        if(overlay && img) {
+                            img.src = e.target.src;
+                            overlay.classList.add('visible');
+                        }
+                        return;
+                    }
+
+                    let overlayClick = e.target.closest('#lightbox-overlay');
+                    if(overlayClick && e.target.id === 'lightbox-overlay') {
+                        overlayClick.classList.remove('visible');
+                    }
+                });
+
+                let hoverTimeout;
+                document.body.addEventListener('mouseover', function (e) {
+                    let target = e.target.closest('.wiki-link');
+                    if (target) {
+                        hoverTimeout = setTimeout(() => {
+                            let noteName = target.getAttribute('data-note');
+                            dotNetHelper.invokeMethodAsync('GetNotePreview', noteName).then(previewHtml => {
+                                let tooltip = document.getElementById('wiki-tooltip');
+                                if (tooltip && previewHtml) {
+                                    tooltip.innerHTML = previewHtml;
+                                    let rect = target.getBoundingClientRect();
+                                    let topPos = rect.bottom + 8;
+                                    let leftPos = rect.left;
+                                    
+                                    if (leftPos + 320 > window.innerWidth) leftPos = window.innerWidth - 330;
+                                    if (topPos + 150 > window.innerHeight) topPos = rect.top - 150;
+                                    
+                                    tooltip.style.left = leftPos + 'px';
+                                    tooltip.style.top = topPos + 'px';
+                                    tooltip.classList.add('visible');
+                                }
+                            });
+                        }, 400); 
+                    }
+                });
+
+                document.body.addEventListener('mouseout', function (e) {
+                    let target = e.target.closest('.wiki-link');
+                    if (target) {
+                        clearTimeout(hoverTimeout);
+                        let tooltip = document.getElementById('wiki-tooltip');
+                        if (tooltip) tooltip.classList.remove('visible');
+                    }
+                });
+            },
+            
+            initScrollSpy: function () {
+                let scrollContainer = document.querySelector('.content-scroll');
+                if(!scrollContainer) return;
+                
+                scrollContainer.addEventListener('scroll', function() {
+                    let headers = Array.from(document.querySelectorAll('.markdown-body h1, .markdown-body h2, .markdown-body h3'));
+                    let activeIndex = -1;
+                    
+                    for (let i = 0; i < headers.length; i++) {
+                        let rect = headers[i].getBoundingClientRect();
+                        if (rect.top <= window.innerHeight / 2.5) {
+                            activeIndex = i;
+                        }
+                    }
+                    
+                    let tocItems = document.querySelectorAll('.toc-item');
+                    tocItems.forEach((item, index) => {
+                        if (index === activeIndex) {
+                            item.classList.add('active-toc');
+                        } else {
+                            item.classList.remove('active-toc');
+                        }
+                    });
+                });
+            },
+            
+            scrollToHeaderByIndex: function (index) {
+                let headers = document.querySelectorAll('.markdown-body h1, .markdown-body h2, .markdown-body h3');
+                if (headers[index]) {
+                    headers[index].scrollIntoView({ behavior: 'smooth' });
+                }
+            },
+
+            scrollToTop: function () {
+                let el = document.querySelector('.content-scroll');
+                if (el) { el.scrollTop = 0; }
+            }
+        };
+    </script>
+</body>
+
+</html>
