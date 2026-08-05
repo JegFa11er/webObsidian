@@ -4,9 +4,15 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>webObsidian</title>
+    <script>
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            document.write('<base href="/" />');
+        } else {
+            document.write('<base href="/webObsidian/" />');
+        }
+    </script>
     <base href="/webObsidian/" />
-    <link href="_framework/dotnet.62a82qd61r.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-EuF72MH3nQK/FwFbR6TncS0pZzu/GGYDnExCbIMHcM8=" />
+    <link href="_framework/dotnet.403ggwpy2i.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-NBNRGp5Ug/Fe6PNGylwi6JMiSGpz1PfunD9KNk1eEpY=" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
@@ -14,7 +20,7 @@
     <script type="importmap">{
   "imports": {
     "./_framework/blazor.webassembly.js": "./_framework/blazor.webassembly.w3qd1tpl0e.js",
-    "./_framework/dotnet.js": "./_framework/dotnet.62a82qd61r.js",
+    "./_framework/dotnet.js": "./_framework/dotnet.403ggwpy2i.js",
     "./_framework/dotnet.native.js": "./_framework/dotnet.native.puryxhmhq9.js",
     "./_framework/dotnet.runtime.js": "./_framework/dotnet.runtime.web2r9gqbh.js"
   },
@@ -22,8 +28,8 @@
   "integrity": {
     "./_framework/blazor.webassembly.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
     "./_framework/blazor.webassembly.w3qd1tpl0e.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
-    "./_framework/dotnet.62a82qd61r.js": "sha256-EuF72MH3nQK/FwFbR6TncS0pZzu/GGYDnExCbIMHcM8=",
-    "./_framework/dotnet.js": "sha256-EuF72MH3nQK/FwFbR6TncS0pZzu/GGYDnExCbIMHcM8=",
+    "./_framework/dotnet.403ggwpy2i.js": "sha256-NBNRGp5Ug/Fe6PNGylwi6JMiSGpz1PfunD9KNk1eEpY=",
+    "./_framework/dotnet.js": "sha256-NBNRGp5Ug/Fe6PNGylwi6JMiSGpz1PfunD9KNk1eEpY=",
     "./_framework/dotnet.native.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.native.puryxhmhq9.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.runtime.js": "sha256-SOUHEQ3FhDAibBSR2u90NWZpoBjPuWRmH0BAATUlhJU=",
