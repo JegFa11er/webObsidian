@@ -11,8 +11,7 @@
             document.write('<base href="/webObsidian/" />');
         }
     </script>
-    <base href="/webObsidian/" />
-    <link href="_framework/dotnet.n4hjtc2gh4.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-d+pH9I078jwXkiskhnlWUSY1+rgTQBb8xDFrW3gwcJw=" />
+    <link href="_framework/dotnet.xe3pp3x5mi.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-dy3X46jSAkXvxMumTaLjY5oTQ7X+h0hwFn8D455/hdo=" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
@@ -20,20 +19,20 @@
     <script type="importmap">{
   "imports": {
     "./_framework/blazor.webassembly.js": "./_framework/blazor.webassembly.w3qd1tpl0e.js",
-    "./_framework/dotnet.js": "./_framework/dotnet.n4hjtc2gh4.js",
     "./_framework/dotnet.native.js": "./_framework/dotnet.native.puryxhmhq9.js",
-    "./_framework/dotnet.runtime.js": "./_framework/dotnet.runtime.web2r9gqbh.js"
+    "./_framework/dotnet.runtime.js": "./_framework/dotnet.runtime.web2r9gqbh.js",
+    "./_framework/dotnet.js": "./_framework/dotnet.xe3pp3x5mi.js"
   },
   "scopes": {},
   "integrity": {
     "./_framework/blazor.webassembly.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
     "./_framework/blazor.webassembly.w3qd1tpl0e.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
-    "./_framework/dotnet.js": "sha256-d+pH9I078jwXkiskhnlWUSY1+rgTQBb8xDFrW3gwcJw=",
-    "./_framework/dotnet.n4hjtc2gh4.js": "sha256-d+pH9I078jwXkiskhnlWUSY1+rgTQBb8xDFrW3gwcJw=",
+    "./_framework/dotnet.js": "sha256-dy3X46jSAkXvxMumTaLjY5oTQ7X+h0hwFn8D455/hdo=",
     "./_framework/dotnet.native.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.native.puryxhmhq9.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.runtime.js": "sha256-SOUHEQ3FhDAibBSR2u90NWZpoBjPuWRmH0BAATUlhJU=",
-    "./_framework/dotnet.runtime.web2r9gqbh.js": "sha256-SOUHEQ3FhDAibBSR2u90NWZpoBjPuWRmH0BAATUlhJU="
+    "./_framework/dotnet.runtime.web2r9gqbh.js": "sha256-SOUHEQ3FhDAibBSR2u90NWZpoBjPuWRmH0BAATUlhJU=",
+    "./_framework/dotnet.xe3pp3x5mi.js": "sha256-dy3X46jSAkXvxMumTaLjY5oTQ7X+h0hwFn8D455/hdo="
   }
 }</script>
 </head>
@@ -55,19 +54,107 @@
     <script src="_framework/blazor.webassembly.w3qd1tpl0e.js"></script>
     <script>
         window.obsidianInterop = {
+
+            // --- 1. ФУНКЦИЯ КАРТЫ ---
+            initInteractiveMap: function () {
+                const viewport = document.getElementById('mapViewport');
+                const wrapper = document.getElementById('mapContainer');
+                if (!viewport || !wrapper) return;
+
+                // Защита от двойной инициализации
+                if (viewport.dataset.initialized) return;
+                viewport.dataset.initialized = "true";
+
+                let scale = 1;
+                let translateX = 0;
+                let translateY = 0;
+                let isDragging = false;
+                let startX, startY;
+                let dragDistance = 0;
+
+                viewport.addEventListener('wheel', function (e) {
+                    e.preventDefault();
+
+                    const rect = viewport.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+
+                    const zoomSensitivity = 0.15;
+                    const delta = e.deltaY > 0 ? -zoomSensitivity : zoomSensitivity;
+                    let newScale = scale + delta;
+                    newScale = Math.min(Math.max(0.5, newScale), 5);
+
+                    const scaleRatio = newScale / scale;
+                    translateX = mouseX - (mouseX - translateX) * scaleRatio;
+                    translateY = mouseY - (mouseY - translateY) * scaleRatio;
+                    scale = newScale;
+
+                    wrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                }, { passive: false });
+
+                viewport.addEventListener('mousedown', function (e) {
+                    if (e.target.classList.contains('marker')) return;
+                    isDragging = true;
+                    dragDistance = 0;
+                    startX = e.clientX - translateX;
+                    startY = e.clientY - translateY;
+                    viewport.style.cursor = 'grabbing';
+                });
+
+                window.addEventListener('mousemove', function (e) {
+                    if (!isDragging) return;
+                    let newTx = e.clientX - startX;
+                    let newTy = e.clientY - startY;
+
+                    dragDistance += Math.abs(newTx - translateX) + Math.abs(newTy - translateY);
+                    translateX = newTx;
+                    translateY = newTy;
+                    wrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                });
+
+                window.addEventListener('mouseup', function (e) {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    viewport.style.cursor = 'grab';
+
+                    if (dragDistance < 5 && !e.target.classList.contains('marker')) {
+                        const rect = wrapper.getBoundingClientRect();
+                        const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
+                        const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+
+                        if (xPercent >= 0 && xPercent <= 100 && yPercent >= 0 && yPercent <= 100) {
+                            const yaml = 'map_x: ' + xPercent.toFixed(2) + '\nmap_y: ' + yPercent.toFixed(2);
+                            navigator.clipboard.writeText(yaml).then(function () {
+                                const toast = document.getElementById('map-toast');
+                                if (toast) {
+                                    toast.innerText = 'Скопировано:\n' + yaml;
+                                    toast.classList.add('show');
+                                    setTimeout(function () { toast.classList.remove('show'); }, 3000);
+                                }
+                            });
+                        }
+                    }
+                });
+
+                viewport.addEventListener('mouseleave', function () {
+                    isDragging = false;
+                    viewport.style.cursor = 'grab';
+                });
+
+                viewport.style.cursor = 'grab';
+            },
+
+            // --- 2. ФУНКЦИЯ ССЫЛОК И ТУЛТИПОВ ---
             initLinkInterceptor: function (dotNetHelper) {
                 document.body.addEventListener('click', function (e) {
                     let linkTarget = e.target.closest('.wiki-link');
                     if (linkTarget) {
                         e.preventDefault();
-                        
-                        // === ИСПРАВЛЕНИЕ ===
-                        // Принудительно прячем подсказку при клике
+
                         let tooltip = document.getElementById('wiki-tooltip');
                         if (tooltip) {
                             tooltip.classList.remove('visible');
                         }
-                        // ===================
 
                         let noteName = linkTarget.getAttribute('data-note');
                         dotNetHelper.invokeMethodAsync('OpenLinkFromJs', noteName);
@@ -77,7 +164,7 @@
                     if (e.target.tagName === 'IMG' && e.target.closest('.markdown-body')) {
                         let overlay = document.getElementById('lightbox-overlay');
                         let img = document.getElementById('lightbox-img');
-                        if(overlay && img) {
+                        if (overlay && img) {
                             img.src = e.target.src;
                             overlay.classList.add('visible');
                         }
@@ -85,7 +172,7 @@
                     }
 
                     let overlayClick = e.target.closest('#lightbox-overlay');
-                    if(overlayClick && e.target.id === 'lightbox-overlay') {
+                    if (overlayClick && e.target.id === 'lightbox-overlay') {
                         overlayClick.classList.remove('visible');
                     }
                 });
@@ -103,16 +190,16 @@
                                     let rect = target.getBoundingClientRect();
                                     let topPos = rect.bottom + 8;
                                     let leftPos = rect.left;
-                                    
+
                                     if (leftPos + 320 > window.innerWidth) leftPos = window.innerWidth - 330;
                                     if (topPos + 150 > window.innerHeight) topPos = rect.top - 150;
-                                    
+
                                     tooltip.style.left = leftPos + 'px';
                                     tooltip.style.top = topPos + 'px';
                                     tooltip.classList.add('visible');
                                 }
                             });
-                        }, 400); 
+                        }, 400);
                     }
                 });
 
@@ -125,22 +212,23 @@
                     }
                 });
             },
-            
+
+            // --- 3. ФУНКЦИЯ ОГЛАВЛЕНИЯ ---
             initScrollSpy: function () {
                 let scrollContainer = document.querySelector('.content-scroll');
-                if(!scrollContainer) return;
-                
-                scrollContainer.addEventListener('scroll', function() {
+                if (!scrollContainer) return;
+
+                scrollContainer.addEventListener('scroll', function () {
                     let headers = Array.from(document.querySelectorAll('.markdown-body h1, .markdown-body h2, .markdown-body h3'));
                     let activeIndex = -1;
-                    
+
                     for (let i = 0; i < headers.length; i++) {
                         let rect = headers[i].getBoundingClientRect();
                         if (rect.top <= window.innerHeight / 2.5) {
                             activeIndex = i;
                         }
                     }
-                    
+
                     let tocItems = document.querySelectorAll('.toc-item');
                     tocItems.forEach((item, index) => {
                         if (index === activeIndex) {
@@ -151,7 +239,8 @@
                     });
                 });
             },
-            
+
+            // --- 4. ПРОКРУТКА К ЗАГОЛОВКУ ---
             scrollToHeaderByIndex: function (index) {
                 let headers = document.querySelectorAll('.markdown-body h1, .markdown-body h2, .markdown-body h3');
                 if (headers[index]) {
@@ -159,6 +248,7 @@
                 }
             },
 
+            // --- 5. ПРОКРУТКА НАВЕРХ ---
             scrollToTop: function () {
                 let el = document.querySelector('.content-scroll');
                 if (el) { el.scrollTop = 0; }
