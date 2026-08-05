@@ -11,7 +11,7 @@
             document.write('<base href="/webObsidian/" />');
         }
     </script>
-    <link href="_framework/dotnet.cn2idcxy31.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-GLVpJV59rVCmHVic4drVjXvc5TyQ7PKvPbixr8ULf3I=" />
+    <link href="_framework/dotnet.7tke97oi5j.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-24Um7ZWuIQ0HuMlme674z6HrtaWy6ssrYQlpS63UQoM=" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
@@ -19,7 +19,7 @@
     <script type="importmap">{
   "imports": {
     "./_framework/blazor.webassembly.js": "./_framework/blazor.webassembly.w3qd1tpl0e.js",
-    "./_framework/dotnet.js": "./_framework/dotnet.cn2idcxy31.js",
+    "./_framework/dotnet.js": "./_framework/dotnet.7tke97oi5j.js",
     "./_framework/dotnet.native.js": "./_framework/dotnet.native.puryxhmhq9.js",
     "./_framework/dotnet.runtime.js": "./_framework/dotnet.runtime.web2r9gqbh.js"
   },
@@ -27,8 +27,8 @@
   "integrity": {
     "./_framework/blazor.webassembly.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
     "./_framework/blazor.webassembly.w3qd1tpl0e.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
-    "./_framework/dotnet.cn2idcxy31.js": "sha256-GLVpJV59rVCmHVic4drVjXvc5TyQ7PKvPbixr8ULf3I=",
-    "./_framework/dotnet.js": "sha256-GLVpJV59rVCmHVic4drVjXvc5TyQ7PKvPbixr8ULf3I=",
+    "./_framework/dotnet.7tke97oi5j.js": "sha256-24Um7ZWuIQ0HuMlme674z6HrtaWy6ssrYQlpS63UQoM=",
+    "./_framework/dotnet.js": "sha256-24Um7ZWuIQ0HuMlme674z6HrtaWy6ssrYQlpS63UQoM=",
     "./_framework/dotnet.native.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.native.puryxhmhq9.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.runtime.js": "sha256-SOUHEQ3FhDAibBSR2u90NWZpoBjPuWRmH0BAATUlhJU=",
@@ -90,6 +90,8 @@
                     scale = newScale;
 
                     wrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                    // Передаем обратный масштаб (1 / scale) меткам, чтобы они визуально не росли
+                    viewport.style.setProperty('--marker-scale', 1 / scale);;
                 }, { passive: false });
 
                 viewport.addEventListener('mousedown', function (e) {
@@ -110,6 +112,7 @@
                     translateX = newTx;
                     translateY = newTy;
                     wrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                    viewport.style.setProperty('--marker-scale', 1 / scale);
                 });
 
                 window.addEventListener('mouseup', function (e) {
