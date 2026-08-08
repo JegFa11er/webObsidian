@@ -14,7 +14,7 @@
             document.write('<base href="/webObsidian/" />');
         }
     </script>
-    <link href="_framework/dotnet.0uj07r77g8.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-mLjvH6P8Apaa8yo+7Dxt+m2bafEOS9XllNa6uWLseWA=" />
+    <link href="_framework/dotnet.abauu7qvew.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-SrafNED9UhX9l7Pa489qbnDkfM/BESh36uaLDp299tM=" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
@@ -22,7 +22,7 @@
     <script type="importmap">{
   "imports": {
     "./_framework/blazor.webassembly.js": "./_framework/blazor.webassembly.w3qd1tpl0e.js",
-    "./_framework/dotnet.js": "./_framework/dotnet.0uj07r77g8.js",
+    "./_framework/dotnet.js": "./_framework/dotnet.abauu7qvew.js",
     "./_framework/dotnet.native.js": "./_framework/dotnet.native.puryxhmhq9.js",
     "./_framework/dotnet.runtime.js": "./_framework/dotnet.runtime.web2r9gqbh.js"
   },
@@ -30,8 +30,8 @@
   "integrity": {
     "./_framework/blazor.webassembly.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
     "./_framework/blazor.webassembly.w3qd1tpl0e.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
-    "./_framework/dotnet.0uj07r77g8.js": "sha256-mLjvH6P8Apaa8yo+7Dxt+m2bafEOS9XllNa6uWLseWA=",
-    "./_framework/dotnet.js": "sha256-mLjvH6P8Apaa8yo+7Dxt+m2bafEOS9XllNa6uWLseWA=",
+    "./_framework/dotnet.abauu7qvew.js": "sha256-SrafNED9UhX9l7Pa489qbnDkfM/BESh36uaLDp299tM=",
+    "./_framework/dotnet.js": "sha256-SrafNED9UhX9l7Pa489qbnDkfM/BESh36uaLDp299tM=",
     "./_framework/dotnet.native.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.native.puryxhmhq9.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.runtime.js": "sha256-SOUHEQ3FhDAibBSR2u90NWZpoBjPuWRmH0BAATUlhJU=",
@@ -54,7 +54,7 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
-    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="_framework/blazor.webassembly.w3qd1tpl0e.js"></script>
     <script>
         window.obsidianInterop = {
 
@@ -69,6 +69,45 @@
             pushHistory: function () {
                 // Добавляем запись в историю браузера, чтобы кнопка "Назад" не закрывала сайт
                 history.pushState({ page: 'note' }, "");
+            },
+            // -----------------------------
+            // --- НОВЫЕ ФУНКЦИИ ИСТОРИИ ---
+            initHistory: function (dotNetHelper) {
+                // ... твой текущий код истории ...
+            },
+
+            pushHistory: function () {
+                // ... твой текущий код истории ...
+            },
+
+            // --- НОВАЯ ФУНКЦИЯ СВАЙПОВ ---
+            initSwipeGestures: function (dotNetHelper) {
+                let touchstartX = 0;
+                let touchstartY = 0;
+                let touchendX = 0;
+                let touchendY = 0;
+
+                // Запоминаем, где палец коснулся экрана
+                document.addEventListener('touchstart', function (e) {
+                    touchstartX = e.changedTouches[0].screenX;
+                    touchstartY = e.changedTouches[0].screenY;
+                }, { passive: true });
+
+                // Вычисляем, куда палец сдвинулся
+                document.addEventListener('touchend', function (e) {
+                    touchendX = e.changedTouches[0].screenX;
+                    touchendY = e.changedTouches[0].screenY;
+
+                    let xDiff = touchstartX - touchendX;
+                    let yDiff = touchstartY - touchendY;
+
+                    // Если сдвиг влево больше 50 пикселей И это горизонтальный свайп (а не прокрутка вниз)
+                    if (xDiff > 50 && Math.abs(xDiff) > Math.abs(yDiff)) {
+                        if (window.innerWidth <= 768) {
+                            dotNetHelper.invokeMethodAsync('CloseMobileMenu');
+                        }
+                    }
+                }, { passive: true });
             },
             // -----------------------------
 
