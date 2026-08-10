@@ -14,7 +14,7 @@
             document.write('<base href="/webObsidian/" />');
         }
     </script>
-    <link href="_framework/dotnet.ie9v52enrg.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-prH+kyASQsWZ1vx26g/VBxw0z9YSnHwAAwArhkNCkfE=" />
+    <link href="_framework/dotnet.kdmavhzg6h.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-yCLUJ5NGV64ghIE3JP9a2nNfOHfMFaGut6toNhYtX94=" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
@@ -22,7 +22,7 @@
     <script type="importmap">{
   "imports": {
     "./_framework/blazor.webassembly.js": "./_framework/blazor.webassembly.w3qd1tpl0e.js",
-    "./_framework/dotnet.js": "./_framework/dotnet.ie9v52enrg.js",
+    "./_framework/dotnet.js": "./_framework/dotnet.kdmavhzg6h.js",
     "./_framework/dotnet.native.js": "./_framework/dotnet.native.puryxhmhq9.js",
     "./_framework/dotnet.runtime.js": "./_framework/dotnet.runtime.web2r9gqbh.js"
   },
@@ -30,8 +30,8 @@
   "integrity": {
     "./_framework/blazor.webassembly.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
     "./_framework/blazor.webassembly.w3qd1tpl0e.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
-    "./_framework/dotnet.ie9v52enrg.js": "sha256-prH+kyASQsWZ1vx26g/VBxw0z9YSnHwAAwArhkNCkfE=",
-    "./_framework/dotnet.js": "sha256-prH+kyASQsWZ1vx26g/VBxw0z9YSnHwAAwArhkNCkfE=",
+    "./_framework/dotnet.js": "sha256-yCLUJ5NGV64ghIE3JP9a2nNfOHfMFaGut6toNhYtX94=",
+    "./_framework/dotnet.kdmavhzg6h.js": "sha256-yCLUJ5NGV64ghIE3JP9a2nNfOHfMFaGut6toNhYtX94=",
     "./_framework/dotnet.native.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.native.puryxhmhq9.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.runtime.js": "sha256-SOUHEQ3FhDAibBSR2u90NWZpoBjPuWRmH0BAATUlhJU=",
@@ -72,12 +72,27 @@
             },
             // -----------------------------
             // --- НОВЫЕ ФУНКЦИИ ИСТОРИИ ---
+            // --- НОВЫЕ ФУНКЦИИ ИСТОРИИ ---
             initHistory: function (dotNetHelper) {
-                // ... твой текущий код истории ...
+                this.dotNetRef = dotNetHelper;
+
+                // Помечаем базовое состояние сайта при загрузке
+                history.replaceState({ page: 'main' }, document.title, window.location.href);
+
+                // Перехватываем системную кнопку "Назад" (на телефоне или в браузере)
+                window.addEventListener('popstate', function (event) {
+                    if (this.dotNetRef) {
+                        // Вызываем наш метод OnSystemBack в C#
+                        this.dotNetRef.invokeMethodAsync('OnSystemBack');
+                    }
+                }.bind(this));
             },
 
             pushHistory: function () {
-                // ... твой текущий код истории ...
+                // При открытии каждой статьи создаем фиктивную запись в истории браузера.
+                // Теперь браузер будет думать, что мы перешли на новую страницу, 
+                // и кнопка "Назад" не закроет вкладку.
+                history.pushState({ page: 'article' }, document.title, window.location.href);
             },
 
             // --- НОВАЯ ФУНКЦИЯ СВАЙПОВ ---
