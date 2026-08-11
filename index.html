@@ -14,7 +14,7 @@
             document.write('<base href="/webObsidian/" />');
         }
     </script>
-    <link href="_framework/dotnet.kdmavhzg6h.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-yCLUJ5NGV64ghIE3JP9a2nNfOHfMFaGut6toNhYtX94=" />
+    <link href="_framework/dotnet.9u15iysx2s.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-kbJIq+NW0oEVipotCp2vXiI5Z+GKRlFsVEyrKGxu8js=" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
@@ -22,7 +22,7 @@
     <script type="importmap">{
   "imports": {
     "./_framework/blazor.webassembly.js": "./_framework/blazor.webassembly.w3qd1tpl0e.js",
-    "./_framework/dotnet.js": "./_framework/dotnet.kdmavhzg6h.js",
+    "./_framework/dotnet.js": "./_framework/dotnet.9u15iysx2s.js",
     "./_framework/dotnet.native.js": "./_framework/dotnet.native.puryxhmhq9.js",
     "./_framework/dotnet.runtime.js": "./_framework/dotnet.runtime.web2r9gqbh.js"
   },
@@ -30,8 +30,8 @@
   "integrity": {
     "./_framework/blazor.webassembly.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
     "./_framework/blazor.webassembly.w3qd1tpl0e.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
-    "./_framework/dotnet.js": "sha256-yCLUJ5NGV64ghIE3JP9a2nNfOHfMFaGut6toNhYtX94=",
-    "./_framework/dotnet.kdmavhzg6h.js": "sha256-yCLUJ5NGV64ghIE3JP9a2nNfOHfMFaGut6toNhYtX94=",
+    "./_framework/dotnet.9u15iysx2s.js": "sha256-kbJIq+NW0oEVipotCp2vXiI5Z+GKRlFsVEyrKGxu8js=",
+    "./_framework/dotnet.js": "sha256-kbJIq+NW0oEVipotCp2vXiI5Z+GKRlFsVEyrKGxu8js=",
     "./_framework/dotnet.native.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.native.puryxhmhq9.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.runtime.js": "sha256-SOUHEQ3FhDAibBSR2u90NWZpoBjPuWRmH0BAATUlhJU=",
@@ -58,11 +58,111 @@
     <script>
         window.obsidianInterop = {
 
-            // --- НОВЫЕ ФУНКЦИИ ИСТОРИИ ---
+            // --- ФУНКЦИИ ИСТОРИИ ---
             initHistory: function (dotNetHelper) {
-                window.addEventListener('popstate', function (e) {
-                    // При нажатии системной кнопки "Назад" вызываем метод в C#
-                    dotNetHelper.invokeMethodAsync('OnSystemBack');
+                this.dotNetRef = dotNetHelper;
+
+                // Помечаем базовое состояние сайта при загрузке
+                history.replaceState({ page: 'main' }, document.title, window.location.href);
+
+                // Перехватываем системную кнопку "Назад" (на телефоне или в браузере)
+                window.addEventListener('popstate', function (event) {
+                    if (this.dotNetRef) {
+                        this.dotNetRef.invokeMethodAsync('OnSystemBack');
+                    }
+                }.bind(this));
+            },
+
+            pushHistory: function () {
+                // Добавляем фиктивную запись в историю
+                history.pushState({ page: 'article' }, document.title, window.location.href);
+            },
+
+            // --- ЭФФЕКТЫ ПРОКРУТКИ И ПРОГРЕСС-БАР ---
+            initScrollEffects: function () {
+                let scrollArea = document.querySelector('.content-scroll');
+                let progressBar = document.getElementById('readProgressBar');
+                let backBtn = document.getElementById('backToTopBtn');
+
+                if (scrollArea) {
+                    scrollArea.addEventListener('scroll', function () {
+                        // 1. Обновление прогресс-бара
+                        if (progressBar) {
+                            let scrollTop = scrollArea.scrollTop;
+                            let scrollHeight = scrollArea.scrollHeight - scrollArea.clientHeight;
+                            let progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+                            progressBar.style.width = progress + '%';
+                        }
+
+                        // 2. Показ/Скрытие кнопки "Наверх"
+                        if (backBtn) {
+                            if (scrollArea.scrollTop > 500) {
+                                backBtn.classList.add('show');
+                            } else {
+                                backBtn.classList.remove('show');
+                            }
+                        }
+                    }, { passive: true });
+                }
+            },
+
+            // --- 6. ПЛАВНАЯ АНИМАЦИЯ ТАЙМЛАЙНА ---
+            initTimelineAnimation: function () {
+                // Защита от двойного навешивания события
+                if (this._timelineInitialized) return;
+                this._timelineInitialized = true;
+
+                document.body.addEventListener('click', function (e) {
+                    let summary = e.target.closest('summary.timeline-summary');
+                    if (summary) {
+                        e.preventDefault(); // Блокируем стандартное резкое поведение браузера
+
+                        let details = summary.parentElement;
+                        let content = details.querySelector('.timeline-content');
+                        if (!content) return;
+
+                        // === ЗАКРЫТИЕ ===
+                        if (details.hasAttribute('open')) {
+                            // 1. Фиксируем точную высоту контента (чтобы анимация не прыгала)
+                            content.style.maxHeight = content.scrollHeight + 'px';
+                            content.style.opacity = '1';
+                            content.style.padding = '20px';
+
+                            void content.offsetWidth; // Заставляем браузер применить стили прямо сейчас
+
+                            // 2. Сжимаем до нуля
+                            content.style.maxHeight = '0px';
+                            content.style.opacity = '0';
+                            content.style.padding = '0 20px';
+
+                            // 3. Ждем 400мс (время анимации из CSS) и полностью закрываем тег
+                            setTimeout(() => {
+                                details.removeAttribute('open');
+                                content.style = ''; // Сбрасываем наши временные инлайн-стили
+                            }, 400);
+                        }
+                        // === ОТКРЫТИЕ ===
+                        else {
+                            details.setAttribute('open', '');
+
+                            // 1. Задаем начальные нулевые значения
+                            content.style.maxHeight = '0px';
+                            content.style.opacity = '0';
+                            content.style.padding = '0 20px';
+
+                            void content.offsetWidth; // Reflow
+
+                            // 2. Раскрываем до реальной высоты + небольшой запас для отступов
+                            content.style.maxHeight = (content.scrollHeight + 50) + 'px';
+                            content.style.opacity = '1';
+                            content.style.padding = '20px';
+
+                            // 3. После завершения анимации отдаем управление обратно CSS
+                            setTimeout(() => {
+                                content.style = '';
+                            }, 400);
+                        }
+                    }
                 });
             },
 
@@ -90,7 +190,7 @@
 
             pushHistory: function () {
                 // При открытии каждой статьи создаем фиктивную запись в истории браузера.
-                // Теперь браузер будет думать, что мы перешли на новую страницу, 
+                // Теперь браузер будет думать, что мы перешли на новую страницу,
                 // и кнопка "Назад" не закроет вкладку.
                 history.pushState({ page: 'article' }, document.title, window.location.href);
             },
@@ -217,10 +317,16 @@
 
                 viewport.style.cursor = 'grab';
             },
-
+   
             // --- 2. ФУНКЦИЯ ССЫЛОК И ТУЛТИПОВ ---
             initLinkInterceptor: function (dotNetHelper) {
+                // Объявляем переменную только ОДИН раз здесь
+                let hoverTimeout;
+
                 document.body.addEventListener('click', function (e) {
+                    // Сбрасываем таймер при клике
+                    clearTimeout(hoverTimeout);
+
                     let linkTarget = e.target.closest('.wiki-link');
                     if (linkTarget) {
                         e.preventDefault();
@@ -251,10 +357,10 @@
                     }
                 });
 
-                let hoverTimeout;
                 document.body.addEventListener('mouseover', function (e) {
                     let target = e.target.closest('.wiki-link');
                     if (target) {
+                        // ВНИМАНИЕ: Здесь мы убрали слово "let", используем уже созданную переменную
                         hoverTimeout = setTimeout(() => {
                             let noteName = target.getAttribute('data-note');
                             dotNetHelper.invokeMethodAsync('GetNotePreview', noteName).then(previewHtml => {
