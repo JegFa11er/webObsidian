@@ -14,7 +14,7 @@
             document.write('<base href="/webObsidian/" />');
         }
     </script>
-    <link href="_framework/dotnet.w1cym58yl1.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-hHvX/d8nqPQ5cBbptwtVKEsSr7Yg1f6jRpZdmWe0nUk=" />
+    <link href="_framework/dotnet.w6d6yfqwhc.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-uNljt04kDBedTlmNye2Tiea6Newd8anh3rXE7Xom6aY=" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
@@ -24,18 +24,18 @@
     "./_framework/blazor.webassembly.js": "./_framework/blazor.webassembly.w3qd1tpl0e.js",
     "./_framework/dotnet.native.js": "./_framework/dotnet.native.puryxhmhq9.js",
     "./_framework/dotnet.runtime.js": "./_framework/dotnet.runtime.web2r9gqbh.js",
-    "./_framework/dotnet.js": "./_framework/dotnet.w1cym58yl1.js"
+    "./_framework/dotnet.js": "./_framework/dotnet.w6d6yfqwhc.js"
   },
   "scopes": {},
   "integrity": {
     "./_framework/blazor.webassembly.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
     "./_framework/blazor.webassembly.w3qd1tpl0e.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
-    "./_framework/dotnet.js": "sha256-hHvX/d8nqPQ5cBbptwtVKEsSr7Yg1f6jRpZdmWe0nUk=",
+    "./_framework/dotnet.js": "sha256-uNljt04kDBedTlmNye2Tiea6Newd8anh3rXE7Xom6aY=",
     "./_framework/dotnet.native.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.native.puryxhmhq9.js": "sha256-gQbHHzCnWx8iDOC65EKbql7bEltJkfao7lmkAbIRajw=",
     "./_framework/dotnet.runtime.js": "sha256-SOUHEQ3FhDAibBSR2u90NWZpoBjPuWRmH0BAATUlhJU=",
     "./_framework/dotnet.runtime.web2r9gqbh.js": "sha256-SOUHEQ3FhDAibBSR2u90NWZpoBjPuWRmH0BAATUlhJU=",
-    "./_framework/dotnet.w1cym58yl1.js": "sha256-hHvX/d8nqPQ5cBbptwtVKEsSr7Yg1f6jRpZdmWe0nUk="
+    "./_framework/dotnet.w6d6yfqwhc.js": "sha256-uNljt04kDBedTlmNye2Tiea6Newd8anh3rXE7Xom6aY="
   }
 }</script>
 </head>
@@ -106,58 +106,52 @@
                 }
             },
 
-            // --- 6. ПЛАВНАЯ АНИМАЦИЯ ТАЙМЛАЙНА ---
+            // --- 6. ПЛАВНАЯ АНИМАЦИЯ ТАЙМЛАЙНА И ОБНОВЛЕНИЕ ОГЛАВЛЕНИЯ ---
             initTimelineAnimation: function () {
-                // Защита от двойного навешивания события
                 if (this._timelineInitialized) return;
                 this._timelineInitialized = true;
 
                 document.body.addEventListener('click', function (e) {
                     let summary = e.target.closest('summary.timeline-summary');
                     if (summary) {
-                        e.preventDefault(); // Блокируем стандартное резкое поведение браузера
+                        e.preventDefault();
 
                         let details = summary.parentElement;
                         let content = details.querySelector('.timeline-content');
                         if (!content) return;
 
-                        // === ЗАКРЫТИЕ ===
                         if (details.hasAttribute('open')) {
-                            // 1. Фиксируем точную высоту контента (чтобы анимация не прыгала)
                             content.style.maxHeight = content.scrollHeight + 'px';
                             content.style.opacity = '1';
                             content.style.padding = '20px';
 
-                            void content.offsetWidth; // Заставляем браузер применить стили прямо сейчас
+                            void content.offsetWidth;
 
-                            // 2. Сжимаем до нуля
                             content.style.maxHeight = '0px';
                             content.style.opacity = '0';
                             content.style.padding = '0 20px';
 
-                            // 3. Ждем 400мс (время анимации из CSS) и полностью закрываем тег
                             setTimeout(() => {
                                 details.removeAttribute('open');
-                                content.style = ''; // Сбрасываем наши временные инлайн-стили
+                                content.style = '';
+                                window.obsidianInterop.updateTocVisibility(); // Убираем пункты из оглавления
                             }, 400);
                         }
-                        // === ОТКРЫТИЕ ===
                         else {
                             details.setAttribute('open', '');
 
-                            // 1. Задаем начальные нулевые значения
                             content.style.maxHeight = '0px';
                             content.style.opacity = '0';
                             content.style.padding = '0 20px';
 
-                            void content.offsetWidth; // Reflow
+                            void content.offsetWidth;
 
-                            // 2. Раскрываем до реальной высоты + небольшой запас для отступов
                             content.style.maxHeight = (content.scrollHeight + 50) + 'px';
                             content.style.opacity = '1';
                             content.style.padding = '20px';
 
-                            // 3. После завершения анимации отдаем управление обратно CSS
+                            window.obsidianInterop.updateTocVisibility(); // Добавляем пункты в оглавление сразу
+
                             setTimeout(() => {
                                 content.style = '';
                             }, 400);
@@ -166,12 +160,57 @@
                 });
             },
 
+            // --- 7. ДИНАМИЧЕСКОЕ ОГЛАВЛЕНИЕ ДЛЯ СВЕРНУТЫХ БЛОКОВ ---
+            updateTocVisibility: function () {
+                // Ищем все заголовки и соответствующие им пункты оглавления
+                let headers = document.querySelectorAll('.markdown-body h1, .markdown-body h2, .markdown-body h3');
+                let tocItems = document.querySelectorAll('.toc-item');
+                if (!tocItems.length) return;
+
+                let visibleCount = 0;
+
+                tocItems.forEach((item, index) => {
+                    let header = headers[index];
+                    if (header) {
+                        // Проверяем, находится ли заголовок внутри нашего сворачиваемого блока
+                        let details = header.closest('details.timeline-details');
+
+                        // Если блок есть и он закрыт — прячем конкретно этот пункт из оглавления
+                        if (details && !details.hasAttribute('open')) {
+                            item.style.display = 'none';
+                        } else {
+                            item.style.display = 'block';
+                            visibleCount++;
+                        }
+                    }
+                });
+
+                // Управляем видимостью всей панели оглавления
+                let tocPanel = document.querySelector('.toc-panel');
+                let mobileBtn = document.querySelector('.mobile-toc-btn');
+                let tocOverlay = document.querySelector('.toc-overlay');
+
+                if (tocPanel) {
+                    // Если видимых заголовков нет — полностью прячем оглавление
+                    tocPanel.style.display = visibleCount > 0 ? '' : 'none';
+
+                    // Если всё свернулось, а панель была открыта на мобилке — задвигаем её
+                    if (visibleCount === 0 && tocPanel.classList.contains('open')) {
+                        tocPanel.classList.remove('open');
+                        if (tocOverlay) tocOverlay.classList.remove('open');
+                    }
+                }
+
+                if (mobileBtn) {
+                    mobileBtn.style.display = visibleCount > 0 ? '' : 'none';
+                }
+            },
+
             pushHistory: function () {
                 // Добавляем запись в историю браузера, чтобы кнопка "Назад" не закрывала сайт
                 history.pushState({ page: 'note' }, "");
             },
-            // -----------------------------
-            // --- НОВЫЕ ФУНКЦИИ ИСТОРИИ ---
+           
             // --- НОВЫЕ ФУНКЦИИ ИСТОРИИ ---
             initHistory: function (dotNetHelper) {
                 this.dotNetRef = dotNetHelper;
