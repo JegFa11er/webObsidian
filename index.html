@@ -14,7 +14,7 @@
             document.write('<base href="/webObsidian/" />');
         }
     </script>
-    <link href="_framework/dotnet.7llbxuiyfe.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-C9u/5ivus7UdN+UhapPR83YxQf+xyrHCEL2kJYFa0ng=" />
+    <link href="_framework/dotnet.3xj4nb1doj.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-1xBi3zoS9AArlKdwvClXWuNdBbdeK087hpTqt62n/cU=" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
@@ -22,7 +22,7 @@
     <script type="importmap">{
   "imports": {
     "./_framework/blazor.webassembly.js": "./_framework/blazor.webassembly.w3qd1tpl0e.js",
-    "./_framework/dotnet.js": "./_framework/dotnet.7llbxuiyfe.js",
+    "./_framework/dotnet.js": "./_framework/dotnet.3xj4nb1doj.js",
     "./_framework/dotnet.native.js": "./_framework/dotnet.native.b6l13xorvf.js",
     "./_framework/dotnet.runtime.js": "./_framework/dotnet.runtime.v06hirbjsv.js"
   },
@@ -30,8 +30,8 @@
   "integrity": {
     "./_framework/blazor.webassembly.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
     "./_framework/blazor.webassembly.w3qd1tpl0e.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
-    "./_framework/dotnet.7llbxuiyfe.js": "sha256-C9u/5ivus7UdN+UhapPR83YxQf+xyrHCEL2kJYFa0ng=",
-    "./_framework/dotnet.js": "sha256-C9u/5ivus7UdN+UhapPR83YxQf+xyrHCEL2kJYFa0ng=",
+    "./_framework/dotnet.3xj4nb1doj.js": "sha256-1xBi3zoS9AArlKdwvClXWuNdBbdeK087hpTqt62n/cU=",
+    "./_framework/dotnet.js": "sha256-1xBi3zoS9AArlKdwvClXWuNdBbdeK087hpTqt62n/cU=",
     "./_framework/dotnet.native.b6l13xorvf.js": "sha256-jZddobLBM2C3lQhYQ61xSQJ/WqD3eQCO3RzoHGaOjx0=",
     "./_framework/dotnet.native.js": "sha256-jZddobLBM2C3lQhYQ61xSQJ/WqD3eQCO3RzoHGaOjx0=",
     "./_framework/dotnet.runtime.js": "sha256-QbnqrZGHtGq7wudS17/AYEPpH9JkphrsyVllD6JHmds=",
@@ -162,7 +162,6 @@
 
             // --- 7. ДИНАМИЧЕСКОЕ ОГЛАВЛЕНИЕ ДЛЯ СВЕРНУТЫХ БЛОКОВ ---
             updateTocVisibility: function () {
-                // Ищем все заголовки и соответствующие им пункты оглавления
                 let headers = document.querySelectorAll('.markdown-body h1, .markdown-body h2, .markdown-body h3');
                 let tocItems = document.querySelectorAll('.toc-item');
                 if (!tocItems.length) return;
@@ -172,10 +171,7 @@
                 tocItems.forEach((item, index) => {
                     let header = headers[index];
                     if (header) {
-                        // Проверяем, находится ли заголовок внутри нашего сворачиваемого блока
                         let details = header.closest('details.timeline-details');
-
-                        // Если блок есть и он закрыт — прячем конкретно этот пункт из оглавления
                         if (details && !details.hasAttribute('open')) {
                             item.style.display = 'none';
                         } else {
@@ -185,16 +181,25 @@
                     }
                 });
 
-                // Управляем видимостью всей панели оглавления
+                let hasCollapsibleBlocks = document.querySelector('.markdown-body details.timeline-details') !== null;
                 let tocPanel = document.querySelector('.toc-panel');
+                let tocTitle = document.querySelector('.toc-panel .toc-title');
                 let mobileBtn = document.querySelector('.mobile-toc-btn');
                 let tocOverlay = document.querySelector('.toc-overlay');
 
-                if (tocPanel) {
-                    // Если видимых заголовков нет — полностью прячем оглавление
-                    tocPanel.style.display = visibleCount > 0 ? '' : 'none';
+                // Прячем заголовок «ОГЛАВЛЕНИЕ», когда все блоки свёрнуты, чтобы панель оставалась чистой
+                if (tocTitle) {
+                    tocTitle.style.display = visibleCount > 0 ? '' : 'none';
+                }
 
-                    // Если всё свернулось, а панель была открыта на мобилке — задвигаем её
+                if (tocPanel) {
+                    // Для статей со сворачиваемыми блоками (Магия) оставляем пустую панель справа
+                    if (hasCollapsibleBlocks) {
+                        tocPanel.style.display = '';
+                    } else {
+                        tocPanel.style.display = visibleCount > 0 ? '' : 'none';
+                    }
+
                     if (visibleCount === 0 && tocPanel.classList.contains('open')) {
                         tocPanel.classList.remove('open');
                         if (tocOverlay) tocOverlay.classList.remove('open');
@@ -611,7 +616,11 @@
 
             toggleMapMarkers: function () {
                 const viewport = document.getElementById('mapViewport');
-                if (viewport) viewport.classList.toggle('hide-markers');
+                const btn = document.getElementById('mapMarkersToggleBtn');
+                if (viewport) {
+                    const hidden = viewport.classList.toggle('hide-markers');
+                    if (btn) btn.classList.toggle('markers-hidden', hidden);
+                }
             },
 
             // --- ПЛАВНЫЙ ПЕРЕЛЁТ КАМЕРЫ К МЕТКЕ + АВТООТКРЫТИЕ POPUP ---
