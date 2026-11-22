@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<!-- Добавляем translate="no" и меняем язык на русский -->
+<html lang="ru" translate="no">
+
+<head>
+    <!-- Добавляем мета-тег запрета перевода для Google -->
+    <meta name="google" content="notranslate" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+    <script>
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            document.write('<base href="/" />');
+        } else {
+            document.write('<base href="/webObsidian/" />');
+        }
+    </script>
+    <link href="_framework/dotnet.yjqbyc82f5.js" rel="preload" as="script" fetchpriority="high" crossorigin="anonymous" integrity="sha256-0pL4hpaBuX/bye4e2DwcBhlz6h7mFOjJx6jEECaJDIc=" />
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="webObsidian.styles.css" rel="stylesheet" />
+    <script type="importmap">{
+  "imports": {
+    "./_framework/blazor.webassembly.js": "./_framework/blazor.webassembly.w3qd1tpl0e.js",
+    "./_framework/dotnet.native.js": "./_framework/dotnet.native.b6l13xorvf.js",
+    "./_framework/dotnet.runtime.js": "./_framework/dotnet.runtime.v06hirbjsv.js",
+    "./_framework/dotnet.js": "./_framework/dotnet.yjqbyc82f5.js"
+  },
+  "scopes": {},
+  "integrity": {
+    "./_framework/blazor.webassembly.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
+    "./_framework/blazor.webassembly.w3qd1tpl0e.js": "sha256-lDXsDYFgm62F+YUvxES7IOTCXYpiHpU3uR45YdC6mq4=",
+    "./_framework/dotnet.js": "sha256-0pL4hpaBuX/bye4e2DwcBhlz6h7mFOjJx6jEECaJDIc=",
+    "./_framework/dotnet.native.b6l13xorvf.js": "sha256-jZddobLBM2C3lQhYQ61xSQJ/WqD3eQCO3RzoHGaOjx0=",
+    "./_framework/dotnet.native.js": "sha256-jZddobLBM2C3lQhYQ61xSQJ/WqD3eQCO3RzoHGaOjx0=",
+    "./_framework/dotnet.runtime.js": "sha256-QbnqrZGHtGq7wudS17/AYEPpH9JkphrsyVllD6JHmds=",
+    "./_framework/dotnet.runtime.v06hirbjsv.js": "sha256-QbnqrZGHtGq7wudS17/AYEPpH9JkphrsyVllD6JHmds=",
+    "./_framework/dotnet.yjqbyc82f5.js": "sha256-0pL4hpaBuX/bye4e2DwcBhlz6h7mFOjJx6jEECaJDIc="
+  }
+}</script>
+</head>
+
+<body>
+    <div id="app">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+    <script src="_framework/blazor.webassembly.w3qd1tpl0e.js"></script>
+    <script>
+        window.obsidianInterop = {
+
+            // --- ФУНКЦИИ ИСТОРИИ ---
+            initHistory: function (dotNetHelper) {
+                this.dotNetRef = dotNetHelper;
+
+                // Помечаем базовое состояние сайта при загрузке
+                history.replaceState({ page: 'main' }, document.title, window.location.href);
+
+                // Перехватываем системную кнопку "Назад" (на телефоне или в браузере)
+                window.addEventListener('popstate', function (event) {
+                    if (this.dotNetRef) {
+                        this.dotNetRef.invokeMethodAsync('OnSystemBack');
+                    }
+                }.bind(this));
+            },
+
+            pushHistory: function () {
+                // Добавляем фиктивную запись в историю
+                history.pushState({ page: 'article' }, document.title, window.location.href);
+            },
+
+            // --- ЭФФЕКТЫ ПРОКРУТКИ И ПРОГРЕСС-БАР ---
+            initScrollEffects: function () {
+                let scrollArea = document.querySelector('.content-scroll');
+                let progressBar = document.getElementById('readProgressBar');
+                let backBtn = document.getElementById('backToTopBtn');
+
+                if (scrollArea) {
+                    scrollArea.addEventListener('scroll', function () {
+                        // 1. Обновление прогресс-бара
+                        if (progressBar) {
+                            let scrollTop = scrollArea.scrollTop;
+                            let scrollHeight = scrollArea.scrollHeight - scrollArea.clientHeight;
+                            let progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+                            progressBar.style.width = progress + '%';
+                        }
+
+                        // 2. Показ/Скрытие кнопки "Наверх"
+                        if (backBtn) {
+                            if (scrollArea.scrollTop > 500) {
+                                backBtn.classList.add('show');
+                            } else {
+                                backBtn.classList.remove('show');
+                            }
+                        }
+                    }, { passive: true });
+                }
+            },
+
+            // --- 6. ПЛАВНАЯ АНИМАЦИЯ ТАЙМЛАЙНА И ОБНОВЛЕНИЕ ОГЛАВЛЕНИЯ ---
+            initTimelineAnimation: function () {
+                if (this._timelineInitialized) return;
+                this._timelineInitialized = true;
+
+                document.body.addEventListener('click', function (e) {
+                    let summary = e.target.closest('summary.timeline-summary');
+                    if (summary) {
+                        e.preventDefault();
+
+                        let details = summary.parentElement;
+                        let content = details.querySelector('.timeline-content');
+                        if (!content) return;
+
+                        if (details.hasAttribute('open')) {
+                            content.style.maxHeight = content.scrollHeight + 'px';
+                            content.style.opacity = '1';
+                            content.style.padding = '20px';
+
+                            void content.offsetWidth;
+
+                            content.style.maxHeight = '0px';
+                            content.style.opacity = '0';
+                            content.style.padding = '0 20px';
+
+                            setTimeout(() => {
+                                details.removeAttribute('open');
+                                content.style = '';
+                                window.obsidianInterop.updateTocVisibility(); // Убираем пункты из оглавления
+                            }, 400);
+                        }
+                        else {
+                            details.setAttribute('open', '');
+
+                            content.style.maxHeight = '0px';
+                            content.style.opacity = '0';
+                            content.style.padding = '0 20px';
+
+                            void content.offsetWidth;
+
+                            content.style.maxHeight = (content.scrollHeight + 50) + 'px';
+                            content.style.opacity = '1';
+                            content.style.padding = '20px';
+
+                            window.obsidianInterop.updateTocVisibility(); // Добавляем пункты в оглавление сразу
+
+                            setTimeout(() => {
+                                content.style = '';
+                            }, 400);
+                        }
+                    }
+                });
+            },
+
+            // --- 7. ДИНАМИЧЕСКОЕ ОГЛАВЛЕНИЕ ДЛЯ СВЕРНУТЫХ БЛОКОВ ---
+            updateTocVisibility: function () {
+                // Ищем все заголовки и соответствующие им пункты оглавления
+                let headers = document.querySelectorAll('.markdown-body h1, .markdown-body h2, .markdown-body h3');
+                let tocItems = document.querySelectorAll('.toc-item');
+                if (!tocItems.length) return;
+
+                let visibleCount = 0;
+
+                tocItems.forEach((item, index) => {
+                    let header = headers[index];
+                    if (header) {
+                        // Проверяем, находится ли заголовок внутри нашего сворачиваемого блока
+                        let details = header.closest('details.timeline-details');
+
+                        // Если блок есть и он закрыт — прячем конкретно этот пункт из оглавления
+                        if (details && !details.hasAttribute('open')) {
+                            item.style.display = 'none';
+                        } else {
+                            item.style.display = 'block';
+                            visibleCount++;
+                        }
+                    }
+                });
+
+                // Управляем видимостью всей панели оглавления
+                let tocPanel = document.querySelector('.toc-panel');
+                let mobileBtn = document.querySelector('.mobile-toc-btn');
+                let tocOverlay = document.querySelector('.toc-overlay');
+
+                if (tocPanel) {
+                    // Если видимых заголовков нет — полностью прячем оглавление
+                    tocPanel.style.display = visibleCount > 0 ? '' : 'none';
+
+                    // Если всё свернулось, а панель была открыта на мобилке — задвигаем её
+                    if (visibleCount === 0 && tocPanel.classList.contains('open')) {
+                        tocPanel.classList.remove('open');
+                        if (tocOverlay) tocOverlay.classList.remove('open');
+                    }
+                }
+
+                if (mobileBtn) {
+                    mobileBtn.style.display = visibleCount > 0 ? '' : 'none';
+                }
+            },
+
+            pushHistory: function () {
+                // Добавляем запись в историю браузера, чтобы кнопка "Назад" не закрывала сайт
+                history.pushState({ page: 'note' }, "");
+            },
+           
+            // --- НОВЫЕ ФУНКЦИИ ИСТОРИИ ---
+            initHistory: function (dotNetHelper) {
+                this.dotNetRef = dotNetHelper;
+
+                // Помечаем базовое состояние сайта при загрузке
+                history.replaceState({ page: 'main' }, document.title, window.location.href);
+
+                // Перехватываем системную кнопку "Назад" (на телефоне или в браузере)
+                window.addEventListener('popstate', function (event) {
+                    if (this.dotNetRef) {
+                        // Вызываем наш метод OnSystemBack в C#
+                        this.dotNetRef.invokeMethodAsync('OnSystemBack');
+                    }
+                }.bind(this));
+            },
+
+            pushHistory: function () {
+                // При открытии каждой статьи создаем фиктивную запись в истории браузера.
+                // Теперь браузер будет думать, что мы перешли на новую страницу,
+                // и кнопка "Назад" не закроет вкладку.
+                history.pushState({ page: 'article' }, document.title, window.location.href);
+            },
+
+            // --- НОВАЯ ФУНКЦИЯ СВАЙПОВ ---
+            initSwipeGestures: function (dotNetHelper) {
+                let touchstartX = 0;
+                let touchstartY = 0;
+                let touchendX = 0;
+                let touchendY = 0;
+
+                // Запоминаем, где палец коснулся экрана
+                document.addEventListener('touchstart', function (e) {
+                    touchstartX = e.changedTouches[0].screenX;
+                    touchstartY = e.changedTouches[0].screenY;
+                }, { passive: true });
+
+                // Вычисляем, куда палец сдвинулся
+                document.addEventListener('touchend', function (e) {
+                    touchendX = e.changedTouches[0].screenX;
+                    touchendY = e.changedTouches[0].screenY;
+
+                    let xDiff = touchstartX - touchendX;
+                    let yDiff = touchstartY - touchendY;
+
+                    // Если сдвиг влево больше 50 пикселей И это горизонтальный свайп (а не прокрутка вниз)
+                    if (xDiff > 50 && Math.abs(xDiff) > Math.abs(yDiff)) {
+                        if (window.innerWidth <= 768) {
+                            dotNetHelper.invokeMethodAsync('CloseMobileMenu');
+                        }
+                    }
+                }, { passive: true });
+            },
+            // -----------------------------
+
+            // --- 1. ФУНКЦИЯ КАРТЫ ---
+            initInteractiveMap: function (dotNetHelper) {
+                const viewport = document.getElementById('mapViewport');
+                const wrapper = document.getElementById('mapContainer');
+                if (!viewport || !wrapper) return;
+
+                // Защита от двойной инициализации (viewport пересоздаётся при смене статьи)
+                if (viewport.dataset.initialized) return;
+                viewport.dataset.initialized = "true";
+
+                this._mapDotNet = dotNetHelper || null;
+
+                const state = {
+                    scale: 1,
+                    translateX: 0,
+                    translateY: 0,
+                    isDragging: false,
+                    startX: 0,
+                    startY: 0,
+                    dragDistance: 0,
+                    flyToToken: 0,
+                    flyAnimId: 0,
+                    fitScale: 0,
+                    minScale: 0.3,
+                    maxScale: 5,
+                    fitted: false
+                };
+                this._mapState = state;
+
+                // Обработчик Esc — закрывает Popup-карточку метки (добавляем один раз, заменяя старый)
+                if (this._mapEscHandler) document.removeEventListener('keydown', this._mapEscHandler);
+                this._mapEscHandler = function (e) {
+                    if (e.key === 'Escape') {
+                        if (window.obsidianInterop._mapDotNet) {
+                            window.obsidianInterop._mapDotNet.invokeMethodAsync('CloseMapPopup');
+                        }
+                    }
+                };
+                document.addEventListener('keydown', this._mapEscHandler);
+
+                const mainMap = document.getElementById('mainMap');
+                const loadingOverlay = document.getElementById('mapLoadingOverlay');
+
+                // Гарантируем, что картинка не останется скрытой (opacity/visibility/display)
+                // до или после анимации появления статьи.
+                if (mainMap) {
+                    mainMap.style.opacity = '1';
+                    mainMap.style.visibility = 'visible';
+                    mainMap.style.display = 'block';
+                }
+
+                // Оверлей «Загрузка карты...»: показываем, пока картинка не загружена,
+                // и прячем, как только она появилась (или произошла ошибка).
+                const hideMapLoading = function () {
+                    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                };
+                if (loadingOverlay) {
+                    if (mainMap && mainMap.complete && mainMap.naturalWidth > 0) {
+                        hideMapLoading();
+                    } else {
+                        loadingOverlay.classList.remove('hidden');
+                    }
+                }
+
+                // Защита от NaN / Infinity / scale(0) и некорректного translate
+                const toFinite = function (v, fallback) {
+                    return (typeof v === 'number' && Number.isFinite(v)) ? v : fallback;
+                };
+
+                const applyTransform = function (tx, ty, scale) {
+                    if (typeof tx === 'number' && Number.isFinite(tx)) state.translateX = tx;
+                    if (typeof ty === 'number' && Number.isFinite(ty)) state.translateY = ty;
+                    if (typeof scale === 'number' && Number.isFinite(scale) && scale > 0.0001) state.scale = scale;
+
+                    const sx = toFinite(state.scale, 1);
+                    const ox = toFinite(state.translateX, 0);
+                    const oy = toFinite(state.translateY, 0);
+                    // Масштаб никогда не должен быть нулевым или отрицательным
+                    const safeScale = (sx > 0.0001) ? sx : 1;
+                    state.scale = safeScale;
+                    state.translateX = ox;
+                    state.translateY = oy;
+                    wrapper.style.transform = `translate(${ox}px, ${oy}px) scale(${safeScale})`;
+                    viewport.style.setProperty('--marker-scale', 1 / safeScale);
+                };
+
+                // Сохраняем applyTransform, чтобы методы тулбара (focusMapMarker и др.)
+                // применяли ту же трансформацию с тем же набором защит.
+                this._applyTransform = applyTransform;
+
+                // Единый ограничитель масштаба: минимальное отдаление — ровно fitScale
+                // (карта вписывается по высоте окна, без «мини-карты» в чёрных полях),
+                // максимальное приближение — не меньше fitScale * 6 (или 3.0 на мелких картах).
+                const clampScale = function (s) {
+                    const fit = (typeof state.fitScale === 'number' && Number.isFinite(state.fitScale) && state.fitScale > 0)
+                        ? state.fitScale : 0;
+                    const minS = fit > 0 ? fit : 0.3;
+                    const maxS = fit > 0 ? Math.max(fit * 6, 3.0) : 5;
+                    return Math.min(Math.max(minS, s), maxS);
+                };
+                this._clampScale = clampScale;
+
+                // Немедленно отменяет программный перелёт камеры
+                const cancelFly = function () {
+                    if (state.flyAnimId) {
+                        cancelAnimationFrame(state.flyAnimId);
+                        state.flyAnimId = 0;
+                    }
+                };
+
+                // Вписываем карту в область просмотра по центру.
+                // Возвращает true, если вписывание удалось (все размеры реальные и валидные).
+                const computeFit = function () {
+                    const nw = (mainMap && mainMap.naturalWidth) || wrapper.scrollWidth || wrapper.offsetWidth || 0;
+                    const nh = (mainMap && mainMap.naturalHeight) || wrapper.scrollHeight || wrapper.offsetHeight || 0;
+                    const vw = viewport.clientWidth || 0;
+                    const vh = viewport.clientHeight || 0;
+                    if (!nw || !nh || !vw || !vh) return false;
+
+                    // Базовый масштаб: карта целиком вписывается в viewport (без запаса).
+                    const fitScale = Math.min(vw / nw, vh / nh);
+                    if (!Number.isFinite(fitScale) || fitScale <= 0) return false;
+
+                    state.fitScale = fitScale;
+                    state.minScale = fitScale;
+                    state.maxScale = Math.max(fitScale * 6, 3.0);
+                    // При открытии карта вписывается ровно по высоте viewport (по центру).
+                    state.scale = fitScale;
+                    state.translateX = (vw - nw * state.scale) / 2;
+                    state.translateY = (vh - nh * state.scale) / 2;
+                    applyTransform();
+                    return true;
+                };
+
+                // Пытаемся вписать карту. Если картинка ещё грузится или viewport
+                // имеет нулевые размеры — откладываем повтор через requestAnimationFrame.
+                let fitScheduled = false;
+                const tryFit = function () {
+                    // Картинка ещё не загружена — ждём onload (ниже)
+                    if (mainMap && !(mainMap.complete && mainMap.naturalWidth > 0)) {
+                        return false;
+                    }
+                    // Картинка появилась — прячем оверлей загрузки.
+                    hideMapLoading();
+                    if (computeFit()) {
+                        state.fitted = true;
+                        return true;
+                    }
+                    if (!fitScheduled) {
+                        fitScheduled = true;
+                        requestAnimationFrame(function () {
+                            fitScheduled = false;
+                            tryFit();
+                        });
+                    }
+                    return false;
+                };
+
+                // Случай кэшированной картинки: вписываем сразу, не дожидаясь onload.
+                if (mainMap) {
+                    if (mainMap.complete && mainMap.naturalWidth > 0) {
+                        tryFit();
+                    } else {
+                        mainMap.onload = function () { tryFit(); };
+                        mainMap.onerror = function () { hideMapLoading(); };
+                        // Подстраховка: картинка могла загрузиться между проверками
+                        if (mainMap.complete && mainMap.naturalWidth > 0) tryFit();
+                    }
+                } else {
+                    tryFit();
+                }
+
+                // ResizeObserver: вписываем карту по центру, как только контейнер
+                // получит реальные размеры (актуально при нулевых clientWidth/clientHeight
+                // в момент OnAfterRenderAsync).
+                if (window.ResizeObserver) {
+                    if (this._mapResizeObserver) this._mapResizeObserver.disconnect();
+                    this._mapResizeObserver = new ResizeObserver(function () {
+                        if (!state.fitted) tryFit();
+                    });
+                    this._mapResizeObserver.observe(viewport);
+                } else {
+                    window.addEventListener('resize', function () {
+                        if (!state.fitted) tryFit();
+                    });
+                }
+
+                viewport.addEventListener('wheel', function (e) {
+                    e.preventDefault();
+
+                    // Пользователь крутит колесо — немедленно отменяем перелёт камеры
+                    cancelFly();
+                    state.flyToToken = (state.flyToToken || 0) + 1;
+
+                    const rect = viewport.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+
+                    // Мультипликативный (процентный) шаг: каждый тик меняет масштаб
+                    // строго на 15% на любом уровне приближения — без резких скачков
+                    // на последнем тике у предела отдаления.
+                    const factor = e.deltaY < 0 ? 1.15 : (1 / 1.15);
+                    let newScale = clampScale(state.scale * factor);
+
+                    const scaleRatio = newScale / state.scale;
+                    state.translateX = mouseX - (mouseX - state.translateX) * scaleRatio;
+                    state.translateY = mouseY - (mouseY - state.translateY) * scaleRatio;
+                    state.scale = newScale;
+                    applyTransform();
+                }, { passive: false });
+
+                viewport.addEventListener('mousedown', function (e) {
+                    // Не начинаем перетаскивание при клике по метке, Popup или панели инструментов
+                    if (e.target.closest && (e.target.closest('.marker') || e.target.closest('.map-popup') || e.target.closest('.map-toolbar'))) return;
+
+                    // Пользователь начал тянуть карту — немедленно отменяем перелёт камеры
+                    cancelFly();
+                    state.flyToToken = (state.flyToToken || 0) + 1;
+
+                    state.isDragging = true;
+                    state.dragDistance = 0;
+                    state.startX = e.clientX - state.translateX;
+                    state.startY = e.clientY - state.translateY;
+                    viewport.classList.add('dragging');
+                });
+
+                window.addEventListener('mousemove', function (e) {
+                    if (!state.isDragging) return;
+                    const newTx = e.clientX - state.startX;
+                    const newTy = e.clientY - state.startY;
+
+                    state.dragDistance += Math.abs(newTx - state.translateX) + Math.abs(newTy - state.translateY);
+                    state.translateX = newTx;
+                    state.translateY = newTy;
+                    applyTransform();
+                });
+
+                window.addEventListener('mouseup', function (e) {
+                    if (!state.isDragging) return;
+                    state.isDragging = false;
+                    viewport.classList.remove('dragging');
+
+                    const clickedMarker = e.target.closest && e.target.closest('.marker');
+                    const clickedPopup = e.target.closest && e.target.closest('.map-popup');
+                    const clickedToolbar = e.target.closest && e.target.closest('.map-toolbar');
+
+                    if (state.dragDistance < 5 && !clickedMarker && !clickedPopup && !clickedToolbar) {
+                        const rect = wrapper.getBoundingClientRect();
+                        if (rect.width > 0 && rect.height > 0) {
+                            const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
+                            const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+
+                            if (xPercent >= 0 && xPercent <= 100 && yPercent >= 0 && yPercent <= 100) {
+                                const yaml = 'map_x: ' + xPercent.toFixed(2) + '\nmap_y: ' + yPercent.toFixed(2);
+                                navigator.clipboard.writeText(yaml).then(function () {
+                                    const toast = document.getElementById('map-toast');
+                                    if (toast) {
+                                        toast.innerText = 'Скопировано:\n' + yaml;
+                                        toast.classList.add('show');
+                                        setTimeout(function () { toast.classList.remove('show'); }, 3000);
+                                    }
+                                });
+                            }
+                        }
+
+                        // Клик по пустому месту закрывает Popup-карточку
+                        if (window.obsidianInterop._mapDotNet) {
+                            window.obsidianInterop._mapDotNet.invokeMethodAsync('OnMapEmptyClick');
+                        }
+                    }
+                });
+
+                viewport.addEventListener('mouseleave', function () {
+                    state.isDragging = false;
+                    viewport.classList.remove('dragging');
+                });
+
+                viewport.addEventListener('touchstart', function (e) {
+                    // Касание экрана — немедленно отменяем перелёт камеры,
+                    // чтобы он не мешал пальцу пользователя
+                    cancelFly();
+                    state.flyToToken = (state.flyToToken || 0) + 1;
+                }, { passive: true });
+            },
+
+            // --- МЕТОДЫ УПРАВЛЕНИЯ КАРТОЙ (тулбар) ---
+            zoomMapIn: function () {
+                const state = this._mapState;
+                const viewport = document.getElementById('mapViewport');
+                const wrapper = document.getElementById('mapContainer');
+                if (!state || !viewport || !wrapper) return;
+                const rect = viewport.getBoundingClientRect();
+                const cx = rect.width / 2;
+                const cy = rect.height / 2;
+                const factor = 1.25;
+                const newScale = this._clampScale(state.scale * factor);
+                const ratio = newScale / state.scale;
+                state.translateX = cx - (cx - state.translateX) * ratio;
+                state.translateY = cy - (cy - state.translateY) * ratio;
+                state.scale = newScale;
+                wrapper.style.transform = `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`;
+                viewport.style.setProperty('--marker-scale', 1 / state.scale);
+            },
+
+            zoomMapOut: function () {
+                const state = this._mapState;
+                const viewport = document.getElementById('mapViewport');
+                const wrapper = document.getElementById('mapContainer');
+                if (!state || !viewport || !wrapper) return;
+                const rect = viewport.getBoundingClientRect();
+                const cx = rect.width / 2;
+                const cy = rect.height / 2;
+                const factor = 1 / 1.25;
+                const newScale = this._clampScale(state.scale * factor);
+                const ratio = newScale / state.scale;
+                state.translateX = cx - (cx - state.translateX) * ratio;
+                state.translateY = cy - (cy - state.translateY) * ratio;
+                state.scale = newScale;
+                wrapper.style.transform = `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`;
+                viewport.style.setProperty('--marker-scale', 1 / state.scale);
+            },
+
+            resetMapView: function () {
+                const state = this._mapState;
+                const viewport = document.getElementById('mapViewport');
+                const wrapper = document.getElementById('mapContainer');
+                const img = document.getElementById('mainMap');
+                if (!state || !viewport || !wrapper) return;
+                const nw = (img && img.naturalWidth) || wrapper.offsetWidth || 0;
+                const nh = (img && img.naturalHeight) || wrapper.offsetHeight || 0;
+                const vw = viewport.clientWidth || 0;
+                const vh = viewport.clientHeight || 0;
+                if (!nw || !nh || !vw || !vh) return;
+                const fitScale = Math.min(vw / nw, vh / nh);
+                state.fitScale = fitScale;
+                state.minScale = fitScale;
+                state.maxScale = Math.max(fitScale * 6, 3.0);
+                state.scale = fitScale;
+                state.translateX = (vw - nw * state.scale) / 2;
+                state.translateY = (vh - nh * state.scale) / 2;
+                wrapper.style.transform = `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`;
+                viewport.style.setProperty('--marker-scale', 1 / state.scale);
+            },
+
+            toggleMapMarkers: function () {
+                const viewport = document.getElementById('mapViewport');
+                if (viewport) viewport.classList.toggle('hide-markers');
+            },
+
+            // --- ПЛАВНЫЙ ПЕРЕЛЁТ КАМЕРЫ К МЕТКЕ + АВТООТКРЫТИЕ POPUP ---
+            focusMapMarker: function (xPercent, yPercent, title) {
+                const state = this._mapState;
+                const viewport = document.getElementById('mapViewport');
+                const wrapper = document.getElementById('mapContainer');
+                const img = document.getElementById('mainMap');
+                const applyTransform = this._applyTransform;
+                if (!state || !viewport || !wrapper || !applyTransform) return;
+
+                const naturalW = (img && img.naturalWidth) || wrapper.offsetWidth || 1;
+                const naturalH = (img && img.naturalHeight) || wrapper.offsetHeight || 1;
+
+                const vw = viewport.clientWidth;
+                const vh = viewport.clientHeight;
+                if (!vw || !vh) return;
+
+                // Якорная точка экрана — куда должна приехать метка (чуть выше центра,
+                // чтобы и Popup-карточка сверху влезала, и метка с окружением были
+                // комфортно расположены в кадре).
+                const anchorX = vw * 0.5;
+                const anchorY = vh * 0.58;
+
+                // Текущая точка карты под якорем ДО начала анимации
+                const startScale = (typeof state.scale === 'number' && Number.isFinite(state.scale) && state.scale > 0)
+                    ? state.scale : 1;
+                const startTx = state.translateX || 0;
+                const startTy = state.translateY || 0;
+                const startMapX = (anchorX - startTx) / startScale;
+                const startMapY = (anchorY - startTy) / startScale;
+
+                // Целевая точка карты (координаты метки)
+                const endMapX = (xPercent / 100) * naturalW;
+                const endMapY = (yPercent / 100) * naturalH;
+
+                // fitScale — базовый масштаб «карта целиком». От него считаем и пределы
+                // зума, и умеренное целевое приближение при фокусе на метке.
+                const fitScale = (typeof state.fitScale === 'number' && Number.isFinite(state.fitScale) && state.fitScale > 0)
+                    ? state.fitScale
+                    : Math.min(vw / naturalW, vh / naturalH);
+
+                const maxScale = Math.max(fitScale * 6, 3.0);
+
+                // Умеренное приближение: город в фокусе, вокруг видны соседние земли.
+                const targetScale = Math.min(maxScale, fitScale * 2.0);
+
+                // Если текущий масштаб уже близок к targetScale или выше него —
+                // сохраняем его, чтобы перелёт между метками не «дёргал» зум.
+                const endScale = (startScale >= targetScale * 0.9)
+                    ? Math.min(startScale, maxScale)
+                    : targetScale;
+
+                // Расстояние между точками на карте
+                const dist = Math.hypot(endMapX - startMapX, endMapY - startMapY);
+
+                // Умное отдаление: близкие метки летят по прямой без дуги,
+                // дальние — с мягкой параболической дугой отдаления.
+                const dipThreshold = Math.max(naturalW, naturalH) * 0.22;
+                let dipFactor = 0;
+                if (dist >= dipThreshold) {
+                    const norm = Math.min(dist / Math.max(naturalW, naturalH), 1);
+                    dipFactor = 0.15 + (0.45 - 0.15) * norm;
+                }
+
+                // Отменяем предыдущую анимацию перелёта
+                if (state.flyAnimId) { cancelAnimationFrame(state.flyAnimId); state.flyAnimId = 0; }
+                state.flyToToken = (state.flyToToken || 0) + 1;
+                const token = state.flyToToken;
+
+                // Во время перелёта отключаем CSS-transition, чтобы не было двойной
+                // интерполяции через браузер (артефакт «ухода вправо-вниз»).
+                wrapper.style.transition = 'none';
+
+                const duration = 550; // мс
+                const startTime = performance.now();
+
+                const easeInOutCubic = function (t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+
+                const step = function (now) {
+                    if (token !== state.flyToToken) return; // анимация отменена
+                    const t = Math.min((now - startTime) / duration, 1);
+                    const easedT = easeInOutCubic(t);
+
+                    // Интерполяция точки фокуса в координатах карты
+                    const cx = startMapX + (endMapX - startMapX) * easedT;
+                    const cy = startMapY + (endMapY - startMapY) * easedT;
+                    const baseScale = startScale + (endScale - startScale) * easedT;
+                    const dip = dipFactor * Math.sin(Math.PI * t);
+                    const currentS = Math.max(fitScale, baseScale * (1 - dip));
+
+                    const tx = anchorX - cx * currentS;
+                    const ty = anchorY - cy * currentS;
+
+                    applyTransform(tx, ty, currentS);
+
+                    if (t < 1) {
+                        state.flyAnimId = requestAnimationFrame(step);
+                    } else {
+                        state.flyAnimId = 0;
+                        // По завершении перелёта открываем Popup-карточку над меткой
+                        window.obsidianInterop.showMapPopup(title);
+                    }
+                };
+                state.flyAnimId = requestAnimationFrame(step);
+            },
+
+            // --- ПОЗИЦИОНИРОВАНИЕ И ПОКАЗ POPUP-КАРТОЧКИ ---
+            showMapPopup: function (title) {
+                const viewport = document.getElementById('mapViewport');
+                const popup = document.getElementById('mapPopup');
+                if (!viewport || !popup) return;
+
+                const vr = viewport.getBoundingClientRect();
+
+                // Ищем маркер по названию (для точного позиционирования над меткой)
+                let marker = null;
+                const markers = viewport.querySelectorAll('.marker');
+                for (let i = 0; i < markers.length; i++) {
+                    if (markers[i].getAttribute('data-title') === title) { marker = markers[i]; break; }
+                }
+
+                popup.style.visibility = 'hidden';
+                popup.classList.remove('open');
+                void popup.offsetWidth; // принудительный reflow для замера размеров
+
+                const pw = popup.offsetWidth || 288;
+                const ph = popup.offsetHeight || 300;
+
+                let left, top;
+                if (marker) {
+                    const mr = marker.getBoundingClientRect();
+                    left = (mr.left - vr.left) + mr.width / 2 - pw / 2;
+                    top = (mr.top - vr.top) - ph - 14;
+                } else {
+                    left = vr.width / 2 - pw / 2;
+                    top = vr.height * 0.18;
+                }
+
+                // Проверка границ: карточка не должна выходить за края области карты
+                left = Math.max(8, Math.min(left, vr.width - pw - 8));
+                top = Math.max(8, Math.min(top, vr.height - ph - 8));
+
+                popup.style.left = left + 'px';
+                popup.style.top = top + 'px';
+                popup.style.visibility = 'visible';
+                popup.classList.add('open');
+            },
+   
+            // --- 2. ФУНКЦИЯ ССЫЛОК И ТУЛТИПОВ ---
+            initLinkInterceptor: function (dotNetHelper) {
+                // Объявляем переменную только ОДИН раз здесь
+                let hoverTimeout;
+
+                document.body.addEventListener('click', function (e) {
+                    // Сбрасываем таймер при клике
+                    clearTimeout(hoverTimeout);
+
+                    let linkTarget = e.target.closest('.wiki-link');
+                    if (linkTarget) {
+                        e.preventDefault();
+
+                        let tooltip = document.getElementById('wiki-tooltip');
+                        if (tooltip) {
+                            tooltip.classList.remove('visible');
+                        }
+
+                        let noteName = linkTarget.getAttribute('data-note');
+                        dotNetHelper.invokeMethodAsync('OpenLinkFromJs', noteName);
+                        return;
+                    }
+
+                    if (e.target.tagName === 'IMG' && e.target.closest('.markdown-body')) {
+                        let overlay = document.getElementById('lightbox-overlay');
+                        let img = document.getElementById('lightbox-img');
+                        if (overlay && img) {
+                            img.src = e.target.src;
+                            overlay.classList.add('visible');
+                        }
+                        return;
+                    }
+
+                    let overlayClick = e.target.closest('#lightbox-overlay');
+                    if (overlayClick && e.target.id === 'lightbox-overlay') {
+                        overlayClick.classList.remove('visible');
+                    }
+                });
+
+                document.body.addEventListener('mouseover', function (e) {
+                    let target = e.target.closest('.wiki-link');
+                    if (target) {
+                        // ВНИМАНИЕ: Здесь мы убрали слово "let", используем уже созданную переменную
+                        hoverTimeout = setTimeout(() => {
+                            let noteName = target.getAttribute('data-note');
+                            dotNetHelper.invokeMethodAsync('GetNotePreview', noteName).then(previewHtml => {
+                                let tooltip = document.getElementById('wiki-tooltip');
+                                if (tooltip && previewHtml) {
+                                    tooltip.innerHTML = previewHtml;
+                                    let rect = target.getBoundingClientRect();
+                                    let topPos = rect.bottom + 8;
+                                    let leftPos = rect.left;
+
+                                    if (leftPos + 320 > window.innerWidth) leftPos = window.innerWidth - 330;
+                                    if (topPos + 150 > window.innerHeight) topPos = rect.top - 150;
+
+                                    tooltip.style.left = leftPos + 'px';
+                                    tooltip.style.top = topPos + 'px';
+                                    tooltip.classList.add('visible');
+                                }
+                            });
+                        }, 400);
+                    }
+                });
+
+                document.body.addEventListener('mouseout', function (e) {
+                    let target = e.target.closest('.wiki-link');
+                    if (target) {
+                        clearTimeout(hoverTimeout);
+                        let tooltip = document.getElementById('wiki-tooltip');
+                        if (tooltip) tooltip.classList.remove('visible');
+                    }
+                });
+            },
+
+            // --- 3. ФУНКЦИЯ ОГЛАВЛЕНИЯ ---
+            initScrollSpy: function () {
+                let scrollContainer = document.querySelector('.content-scroll');
+                if (!scrollContainer) return;
+
+                scrollContainer.addEventListener('scroll', function () {
+                    let headers = Array.from(document.querySelectorAll('.markdown-body h1, .markdown-body h2, .markdown-body h3'));
+                    let activeIndex = -1;
+
+                    for (let i = 0; i < headers.length; i++) {
+                        let rect = headers[i].getBoundingClientRect();
+                        if (rect.top <= window.innerHeight / 2.5) {
+                            activeIndex = i;
+                        }
+                    }
+
+                    let tocItems = document.querySelectorAll('.toc-item');
+                    tocItems.forEach((item, index) => {
+                        if (index === activeIndex) {
+                            item.classList.add('active-toc');
+                        } else {
+                            item.classList.remove('active-toc');
+                        }
+                    });
+                });
+            },
+
+            // --- 4. ПРОКРУТКА К ЗАГОЛОВКУ ---
+            scrollToHeaderByIndex: function (index) {
+                let headers = document.querySelectorAll('.markdown-body h1, .markdown-body h2, .markdown-body h3');
+                if (headers[index]) {
+                    headers[index].scrollIntoView({ behavior: 'smooth' });
+                }
+            },
+
+            // --- 5. ПРОКРУТКА НАВЕРХ ---
+            scrollToTop: function () {
+                let el = document.querySelector('.content-scroll');
+                if (el) { el.scrollTop = 0; }
+            },
+
+            // --- УДЕРЖАНИЕ ВЫПАДАЮЩЕГО МЕНЮ В ГРАНИЦАХ ЭКРАНА ---
+            clampDropdown: function (id) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const r = el.getBoundingClientRect();
+                const pad = 8;
+                const left = parseFloat(el.style.left);
+                const top = parseFloat(el.style.top);
+                if (Number.isNaN(left) || Number.isNaN(top)) return;
+                let newLeft = left;
+                let newTop = top;
+                if (r.left < pad) newLeft = left + (pad - r.left);
+                if (r.top < pad) newTop = top + (pad - r.top);
+                if (r.right > window.innerWidth - pad) newLeft = left - (r.right - (window.innerWidth - pad));
+                if (r.bottom > window.innerHeight - pad) newTop = top - (r.bottom - (window.innerHeight - pad));
+                if (newLeft !== left) el.style.left = newLeft + 'px';
+                if (newTop !== top) el.style.top = newTop + 'px';
+            },
+
+            // --- ФОНОВАЯ ПРЕДЗАГРУЗКА ИЗОБРАЖЕНИЙ (КАРТ) ---
+            // Лёгкая функция: создаёт Image в фоне с низким приоритетом, чтобы к моменту
+            // открытия карты она уже была в кэше браузера.
+            preloadImages: function (urls) {
+                if (!urls || !urls.length) return;
+                const load = function () {
+                    for (let i = 0; i < urls.length; i++) {
+                        const url = urls[i];
+                        if (!url) continue;
+                        const img = new Image();
+                        img.src = url;
+                    }
+                };
+                if (window.requestIdleCallback) {
+                    window.requestIdleCallback(load, { timeout: 2000 });
+                } else {
+                    setTimeout(load, 800);
+                }
+            }
+        };
+    </script>
+</body>
+
+</html>
